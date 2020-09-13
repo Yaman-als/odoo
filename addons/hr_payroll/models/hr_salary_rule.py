@@ -197,6 +197,7 @@ class HrSalaryRule(models.Model):
         :rtype: (float, float, float)
         """
         self.ensure_one()
+        dp = self.env['decimal.precision'].precision_get('Payroll')
         if self.amount_select == 'fix':
             try:
                 return self.amount_fix, float(safe_eval(self.quantity, localdict)), 100.0
@@ -204,7 +205,8 @@ class HrSalaryRule(models.Model):
                 raise UserError(_('Wrong quantity defined for salary rule %s (%s).') % (self.name, self.code))
         elif self.amount_select == 'percentage':
             try:
-                return (float(safe_eval(self.amount_percentage_base, localdict)),
+                return (round(float(safe_eval(self.amount_percentage_base, localdict)), dp),
+                # return (float(safe_eval(self.amount_percentage_base, localdict)),
                         float(safe_eval(self.quantity, localdict)),
                         self.amount_percentage)
             except:
@@ -212,7 +214,9 @@ class HrSalaryRule(models.Model):
         else:
             try:
                 safe_eval(self.amount_python_compute, localdict, mode='exec', nocopy=True)
-                return float(localdict['result']), 'result_qty' in localdict and localdict['result_qty'] or 1.0, 'result_rate' in localdict and localdict['result_rate'] or 100.0
+                # safe_eval(round(self.amount_python_compute, dp), localdict, mode='exec', nocopy=True)
+                return round(float(localdict['result']), dp), 'result_qty' in localdict and localdict['result_qty'] or 1.0, 'result_rate' in localdict and localdict['result_rate'] or 100.0
+            #     return float(localdict['result']), 'result_qty' in localdict and localdict['result_qty'] or 1.0, 'result_rate' in localdict and localdict['result_rate'] or 100.0
             except:
                 raise UserError(_('Wrong python code defined for salary rule %s (%s).') % (self.name, self.code))
 
